@@ -36,19 +36,8 @@ class Wallet{
         }
     }
 
-    static calculateBalance(address, blockchain) {
-        let balance = 0;
-        blockchain.chain.forEach(block => {
-            block.data.forEach(transaction => {
-                if (transaction.sender === address) {
-                    balance -= transaction.amount; // Deduct amount for transactions sent
-                }
-                if (transaction.recipient === address) {
-                    balance += transaction.amount; // Add amount for transactions received
-                }
-            });
-        });
-        return balance; // Return the calculated balance
+    static calculateBalance(blockchain) {
+        return blockchain.getBalance(this.publicKey); // Calculate the balance for this wallet
     }
 
     hashData(data) {

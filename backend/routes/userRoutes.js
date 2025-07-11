@@ -2,10 +2,11 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config(); // Load environment variables from .env file
-const { byteOpal } = require('../blockchain/instance'); // Assuming you have an instance of the blockchain
-const { Wallet } = require('../wallet/wallet');
+const { byteOpal } = require('./blockchain/instance'); // Assuming you have an instance of the blockchain
+const { Wallet, ec } = require('../wallet/wallet');
 const User = require('../model/user'); // Assuming you have a User model defined
 const router = express.Router();
+const Transaction = require('../model/transaction'); // Assuming you have a Transaction model defined
 
 router.post('/register', async (req, res) => {
     const { email, password, confirmPassword } = req.body;
@@ -94,10 +95,86 @@ router.get('/balance', async (req, res) => {
     }
 
     try {
-        const balance = Wallet.calculateBalance(walletAddress, byteOpal);
+        const balance = byteOpal.getBalance(walletAddress); // Get the balance from the blockchain instance
+        if (balance === null || balance === undefined) {
+            return res.status(404).json({ error: 'Balance not found' });
+        }
+        // Return the balance as a JSON response
         res.status(200).json({ balance });
     } catch (error) {
         console.error('Error getting balance:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.post('/transaction', async (req, res) => {
+    const { privateKey, recipient, amount } = req.body;
+
+    if (!privateKey || !recipient || !amount) {
+        return res.status(400).json({ error: 'Private key, recipient, and amount are required' });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'wallet');
+        const sender = decoded.walletAddress;
+
+        // Verify the private key
+        const key = ec.keyFromPrivate(privateKey, 'hex');
+        if (!key) {
+            return res.status(400).json({ error: 'Invalid private key' });
+        }
+
+        const transaction = {
+            sender: sender,
+            recipient: recipient,
+            amount: amount,
+            timestamp: Date.now(),
+        };
+
+        // Sign the transaction
+        const hash = Wallet.prototype.hashData(transaction);
+        const signature = key.sign(hash).toDER('hex');
+        
+        const signedTransaction = {
+            ...transaction,
+            signature: signature,
+        };
+        // Adding Transaction function already checks for valid signature and sufficient balance
+        // If the transaction is invalid, it will throw an error
+        // Add the transaction to the blockchain
+        byteOpal.addTransaction(signedTransaction);
+        await Transaction.create(signedTransaction); // Save the transaction to the database
+
+        res.status(201).json({ message: 'Transaction added successfully', transaction: signedTransaction });
+    }
+    catch (error) {
+        console.error('Invalid private key:', error);
+        return res.status(400).json({ error: 'Invalid private key' });
+    }
+});
+
+router.get('/mine', async (req, res) => {
+    const token = req.cookies.authToken; // Get the token from cookies
+    if (!token) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Get wallet address from the token
+    let walletAddress;
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'wallet');
+        walletAddress = decoded.walletAddress; // Get the wallet address from the token
+    } catch (error) {
+        console.error('Token verification failed:', error);
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    try {
+        await byteOpal.minePendingTransactions(walletAddress); // Mine pending transactions for the user's wallet address
+        // Save the mined transactions to the database
+        res.status(200).json({ message: 'Mining successful' });
+    } catch (error) {
+        console.error('Error mining transactions:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

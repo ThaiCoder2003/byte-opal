@@ -1,7 +1,7 @@
 const express = require('express');
-const { Wallet } = require('../wallet/wallet');
-const byteOpal = require('../blockchain/instance').byteOpal;
-const Transaction = require('../model/transaction'); // Assuming you have a Mongoose model for Pending Transactions
+const { Wallet } = require('../../wallet/wallet');
+const byteOpal = require('../../blockchain/instance').byteOpal;
+const Transaction = require('../../model/transaction'); // Assuming you have a Mongoose model for Pending Transactions
 
 const router = express.Router();
 
@@ -28,14 +28,11 @@ router.post('/transaction', async (req, res) => {
     signature
   };
 
-  // Validate the transaction
-  if (!byteOpal.isValidTransaction(transaction)) {
-    return res.status(400).json({ error: 'Invalid transaction' });
-  }
+  // addTransaction already checks for valid signature and sufficient balance
   // Add the transaction to the pending transactions
-  await Transaction.create(transaction); // Save transaction to the database
-  
   const newTransaction = byteOpal.addTransaction(transaction);
+  await Transaction.create(transaction); // Save transaction to the database
+
   res.status(201).json(newTransaction);
 });
 

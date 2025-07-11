@@ -1,7 +1,7 @@
 const crypto = require('crypto'); // Assuming you have a utility to verify transactions
-const BlockModel = require('../model/blockchainModel'); // Assuming you have a Mongoose model for Block
-const Transaction = require('../model/transaction'); // Assuming you have a Mongoose model for Pending Transactions
-const { Wallet } = require('../wallet/wallet');
+const BlockModel = require('../../../model/blockchainModel'); // Assuming you have a Mongoose model for Block
+const Transaction = require('../../../model/transaction'); // Assuming you have a Mongoose model for Pending Transactions
+const { Wallet } = require('../../../wallet/wallet');
 
 class Block {
     constructor(index, previousHash = '', timestamp, data, hash) {
@@ -15,6 +15,7 @@ class Block {
     
     calculateHash() {
         return crypto.createHash('sha256')
+        
             .update(
                 this.index +
                 this.previousHash +
@@ -109,6 +110,11 @@ class BlockChain {
         if (Wallet.verifySignature(transaction) === false) {
             throw new Error('Invalid transaction signature');
         }
+        // Check if the sender has enough balance
+        const senderBalance = this.getBalance(transaction.sender);
+        if (senderBalance < transaction.amount) {
+            throw new Error('Insufficient balance for transaction');
+        }
         this.pendingTransactions.push(transaction);
     }
 
@@ -153,7 +159,7 @@ class BlockChain {
         // Save the mined transactions to the database
         const idsToRemove = await PendingTransactionModel.find()
             .sort({ timestamp: 1 })
-            .limit(this.blockSize - 1)
+            .limit(this.blockSize - 1) // Exclude the reward transaction
             .select('_id');
 
         await Transaction.deleteMany({ _id: { $in: idsToRemove.map(tx => tx._id) } });
