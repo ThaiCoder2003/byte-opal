@@ -13,31 +13,40 @@ class Wallet{
         return this.publicKey; // Return the public key
     }
 
-    sign(data) {
-        const hash = this.hashData(data); // Hash the data to be signed
-        return this.keyPair.sign(hash).toDER('hex'); // Sign the hash and return it in DER format
+    sign(dataHash) {
+        return this.keyPair.sign(dataHash).toDER('hex'); // Sign the hash and return it in DER format
     }
 
     static verifySignature(transaction) {
-        if (transaction.sender === 'ByteOpal System') return true; // skip for reward tx
-        if (!transaction.signature || !transaction.sender || !transaction.recipient) return false;
-
-        const { signature, ...txData } = transaction;
-        const hash = crypto.createHash('sha256')
-            .update(JSON.stringify(txData))
-            .digest('hex');
-
-        try {
-            const key = ec.keyFromPublic(transaction.sender, 'hex');
-            return key.verify(hash, signature);
-        } catch (err) {
-            console.error('Signature verification failed:', err.message);
+        if (!transaction.inputs || transaction.inputs.length === 0) {
+            return true;
+        }
+        const txHash = transaction.id || transaction.hash;
+        if (!txHash) {
+            console.error("Transaction is missing a hash to verify against.");
             return false;
         }
-    }
 
-    static calculateBalance(blockchain) {
-        return blockchain.getBalance(this.publicKey); // Calculate the balance for this wallet
+        for (const input of transaction.inputs) {
+            if (!input.signature || !input.address) {
+                console.error("Input is missing signature or address.");
+                return false;
+            }
+
+            try {
+                // The public key is the 'address' of the UTXO being spent.
+                const key = ec.keyFromPublic(input.address, 'hex');
+
+                // Verify that the input's signature correctly signed the transaction hash.
+                if (!key.verify(txHash, input.signature)) {
+                    // If any signature is invalid, the entire transaction is invalid.
+                    return false;
+                }
+            } catch (err) {
+                console.error('Signature verification failed for an input:', err.message);
+                return false;
+            }
+        }
     }
 
     hashData(data) {

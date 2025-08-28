@@ -36,3 +36,254 @@
     transform: rotate(360deg);
   }
 }
+
+/* --- Global & Base Styles --- */
+:root {
+  --background-color: #121212;
+  --surface-color: #1e1e1e;
+  --primary-color: #6200ee;
+  --primary-variant: #3700b3;
+  --secondary-color: #03dac6;
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --success-color: #28a745;
+  --error-color: #dc3545;
+  --border-color: #333;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 2rem;
+}
+
+a {
+  color: var(--secondary-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h2 {
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+}
+
+/* --- Navbar Styles --- */
+.navbar {
+  background-color: var(--surface-color);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.navbar-logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.navbar-user {
+  color: var(--text-secondary);
+}
+
+.logout-button {
+  background: none;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.logout-button:hover {
+  background-color: var(--primary-color);
+  color: var(--text-primary);
+}
+
+/* --- Form Styles (Login, Register, Send) --- */
+.login-container, .register-container, .mine-container, .send-container {
+  background-color: var(--surface-color);
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 500px;
+  margin: 2rem auto;
+  text-align: center;
+}
+
+form input[type="email"],
+form input[type="text"],
+form input[type="password"],
+form input[type="number"] {
+  width: 100%;
+  padding: 0.8rem;
+  margin-bottom: 1rem;
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+form button[type="submit"], .action-button {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: var(--primary-color);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-block;
+  text-align: center;
+}
+
+form button[type="submit"]:hover, .action-button:hover {
+  background-color: var(--primary-variant);
+}
+
+/* --- Reveal Key Page Styles --- */
+.reveal-key-container {
+  text-align: center;
+  background-color: var(--surface-color);
+  padding: 2rem;
+  border-radius: 8px;
+  max-width: 600px;
+  margin: 2rem auto;
+}
+
+.reveal-key-container h2 {
+  color: var(--error-color);
+}
+
+.private-key-display {
+  background-color: var(--background-color);
+  border: 1px dashed var(--error-color);
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 5px;
+  word-wrap: break-word;
+}
+
+.private-key-display code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.1rem;
+}
+
+/* --- Wallet Dashboard Styles --- */
+.wallet-dashboard {
+  background-color: var(--surface-color);
+  padding: 2rem;
+  border-radius: 8px;
+}
+
+.wallet-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; /* Align items to the top */
+  background-color: var(--background-color);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  gap: 1rem; /* Add some space between the elements */
+}
+
+.wallet-address {
+  /* This container will now be flexible */
+  flex: 1; /* Allow the address container to grow and shrink */
+  min-width: 0; /* A key flexbox trick to allow shrinking */
+}
+
+.wallet-address code {
+  font-family: 'Courier New', Courier, monospace;
+  color: var(--text-secondary);
+  word-wrap: break-word; /* Forcing the wrap */
+  overflow-wrap: break-word;
+}
+
+.wallet-balance {
+  font-size: 1.8rem;
+  font-weight: bold;
+  white-space: nowrap; /* Prevent the balance text from wrapping */
+}
+
+.wallet-balance span {
+  color: var(--secondary-color);
+}
+
+.wallet-actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+/* --- Transaction History Table Styles --- */
+.transaction-history table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.transaction-history th, .transaction-history td {
+  padding: 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.transaction-history th {
+  color: var(--text-secondary);
+}
+
+.tx-receive {
+  border-left: 4px solid var(--success-color);
+}
+
+.tx-send {
+  border-left: 4px solid var(--error-color);
+}
+
+.status-confirmed {
+  color: var(--success-color);
+  font-weight: bold;
+}
+
+.status-pending {
+  color: orange;
+  font-weight: bold;
+}
+
+/* --- Status & Error Messages --- */
+.error-message {
+  color: var(--error-color);
+  margin-top: 1rem;
+}
+
+.success-message {
+  color: var(--success-color);
+  margin-top: 1rem;
+}

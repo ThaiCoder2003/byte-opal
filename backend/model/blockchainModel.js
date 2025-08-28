@@ -6,7 +6,7 @@ const blockSchema = new mongoose.Schema({
     previousHash: String,
     hash: String,
     nonce: Number,
-    transactions: Array,
+    data: Array,
 });
 
 module.exports = mongoose.model('Block', blockSchema);

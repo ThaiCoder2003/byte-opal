@@ -1,0 +1,16 @@
+{
+  "name": "byteopal-blockchain-app",
+  "version": "1.0.0",
+  "description": "Full-stack blockchain application with a Node.js backend and React frontend.",
+  "scripts": {
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "start:backend": "cd backend && npm run start",
+    "start:frontend": "cd frontend && npm start",
+    "dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
