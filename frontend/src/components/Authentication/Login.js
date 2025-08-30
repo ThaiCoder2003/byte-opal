@@ -17,8 +17,6 @@ const Login = ({ onLogin }) => {
         try {
             const response = await api.post('/auth/login', { email, password });
             onLogin(response.data.walletAddress); // Call the onLogin prop with the wallet address
-
-            navigate('/wallet'); // 3. Navigate to the wallet page
         } catch (err) {
             if (err.response && err.response.data) {
                 setError(err.response.data.error);
