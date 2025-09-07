@@ -125,74 +125,96 @@ class BlockChain {
         return this.chain[this.chain.length - 1];
     }
 
-    findUTXOsForAddress(address) {
-        const utxos = [];
-        const spentOutputs = new Set();
+// In backend/blockchain/blockchain.js
 
-        for (const block of this.chain) {
-            for (const tx of block.data) {
-                if (tx.inputs) {
-                    for (const input of tx.inputs) {
-                        if (input.address === address) {
-                            spentOutputs.add(`${input.transactionId}:${input.outputIndex}`);
-                        }
+async findUTXOsForAddress(address) {
+    console.log(`\n--- Finding UTXOs for Address: ${address} ---`);
+    const utxos = [];
+    const spentOutputs = new Set();
+
+    const currentChain = await BlockModel.find({}).sort({ index: 1 });
+
+    for (const block of currentChain) {
+        for (const tx of block.data) {
+            // Log spent outputs
+            if (tx.inputs) {
+                for (const input of tx.inputs) {
+                    if (input.address === address) {
+                        const spentId = `${input.transactionId}:${input.outputIndex}`;
+                        console.log(`  - Found Spent Output: ${spentId}`);
+                        spentOutputs.add(spentId);
                     }
-                }
-
-                if (tx.outputs) {
-                    tx.outputs.forEach((output, index) => {
-                        if (output.address === address) {
-                            const outputId = `${tx.id || tx.hash}:${index}`;
-                            if (!spentOutputs.has(outputId)) {
-                                utxos.push({
-                                    transactionId: tx.id || tx.hash,
-                                    outputIndex: index,
-                                    amount: output.amount,
-                                    address: output.address
-                                });
-                            }
-                        }
-                    });
                 }
             }
         }
-
-        return utxos;
     }
+
+    for (const block of currentChain) {
+        for (const tx of block.data) {
+            // Log received outputs and check if they're unspent
+            if (tx.outputs) {
+                tx.outputs.forEach((output, index) => {
+                    if (output.address === address) {
+                        const outputId = `${tx.id || tx.hash}:${index}`;
+                        console.log(`  + Found Received Output: ${outputId} with amount ${output.amount}`);
+                        if (!spentOutputs.has(outputId)) {
+                            console.log(`    -> It's UNSPENT. Adding to balance.`);
+                            utxos.push({
+                                transactionId: tx.id || tx.hash,
+                                outputIndex: index,
+                                amount: output.amount,
+                                address: output.address
+                            });
+                        } else {
+                            console.log(`    -> It's SPENT. Ignoring.`);
+                        }
+                    }
+                });
+            }
+        }
+    }
+    console.log('--- Finished Finding UTXOs ---');
+    return utxos;
+}
+
+// In backend/blockchain/blockchain.js
 
     async addTransaction(senderWallet, recipientAddress, amount) {
         const senderAddress = senderWallet.getPublicKey();
-        const utxos = this.findUTXOsForAddress(senderAddress);
+        const utxos = await this.findUTXOsForAddress(senderAddress);
         const balance = utxos.reduce((total, utxo) => total + utxo.amount, 0);
+
         if (balance < amount) {
             throw new Error('Insufficient balance');
         }
 
-        let totalInput = 0;
+        let accumulatedAmount = 0;
         const inputs = [];
+        
+        // This corrected loop gathers UTXOs and adds them to the 'inputs' array
         for (const utxo of utxos) {
-            if (totalInput >= amount) break;
-            totalInput += utxo.amount;
+            accumulatedAmount += utxo.amount;
             inputs.push({
                 transactionId: utxo.transactionId,
                 outputIndex: utxo.outputIndex,
                 address: senderAddress,
             });
+            if (accumulatedAmount >= amount) {
+                break; // Stop once we have enough funds
+            }
         }
 
-        const outputs = [
-            { amount, address: recipientAddress }
-        ];
+        const outputs = [{ amount, address: recipientAddress }];
+        const change = accumulatedAmount - amount;
 
-        if (totalInput > amount) {
+        if (change > 0) {
             outputs.push({
-                amount: totalInput - amount,
-                address: senderAddress // Change to sender address for change
+                amount: change,
+                address: senderAddress
             });
         }
 
         const transaction = new Transaction(inputs, outputs);
-
         transaction.inputs.forEach(input => {
             input.signature = senderWallet.sign(transaction.id);
         });
@@ -244,8 +266,8 @@ class BlockChain {
         this.pendingTransactions = this.pendingTransactions.slice(this.blockSize - 1);
     }
 
-    getBalance(address) {
-        const utxos = this.findUTXOsForAddress(address);
+    async getBalance(address) {
+        const utxos = await this.findUTXOsForAddress(address); // Await the result
         return utxos.reduce((total, utxo) => total + utxo.amount, 0);
     }
 }

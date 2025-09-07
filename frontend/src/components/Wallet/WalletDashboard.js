@@ -5,11 +5,17 @@ import api from '../../services/api'; // Your centralized api service
 // A helper function to format the transaction display
 const TransactionItem = ({ tx }) => {
     const isReceive = tx.type === 'receive';
+    // Your renderCounterparty helper function can be simplified now
+    // as the data structure is clear.
+    const counterpartyDisplay = tx.counterparty === 'Mining Reward' 
+        ? tx.counterparty 
+        : `${tx.counterparty.substring(0, 10)}...`;
+
     return (
         <tr className={isReceive ? 'tx-receive' : 'tx-send'}>
             <td><Link to={`/tx/${tx.hash}`}>{`${tx.hash.substring(0, 10)}...`}</Link></td>
             <td>{tx.type}</td>
-            <td><Link to={`/address/${tx.counterparty}`}>{`${tx.counterparty.substring(0, 10)}...`}</Link></td>
+            <td><Link to={`/address/${tx.counterparty}`}>{counterpartyDisplay}</Link></td>
             <td>{tx.amount}</td>
             <td><span className={`status-${tx.status}`}>{tx.status}</span></td>
         </tr>
@@ -36,6 +42,10 @@ const WalletDashboard = ({ user }) => {
 
                 setBalance(balanceRes.data.balance);
                 setTransactions(historyRes.data.transactions);
+
+                                // --- ADD THIS LINE ---
+                console.log('DATA FROM API:', historyRes.data.transactions);
+
                 setError('');
             } catch (err) {
                 setError('Failed to fetch wallet data.');

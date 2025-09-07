@@ -61,7 +61,21 @@ const SendTransactionPage = () => {
                     onChange={(e) => setPrivateKey(e.target.value)}
                     required
                 />
-                <button type="submit" disabled={isLoading}>
+                <button 
+                    type="submit" 
+                    disabled={isLoading}                
+                    style={{
+                        padding: '12px 32px',
+                        fontSize: '1rem',
+                        backgroundColor: isLoading ? '#ccc' : '#a700d1ff',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: isLoading ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                        transition: 'background 0.2s'
+                    }}
+                >
                     {isLoading ? 'Sending...' : 'Send Transaction'}
                 </button>
             </form>

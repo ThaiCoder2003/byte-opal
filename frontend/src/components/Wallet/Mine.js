@@ -30,7 +30,21 @@ const MinePage = () => {
                 If you successfully mine the block, a reward will be sent to your wallet address.
             </p>
             
-            <button onClick={handleMine} disabled={isLoading}>
+            <button
+                onClick={handleMine}
+                disabled={isLoading}
+                style={{
+                    padding: '12px 32px',
+                    fontSize: '1rem',
+                    backgroundColor: isLoading ? '#ccc' : '#a700d1ff',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: isLoading ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                    transition: 'background 0.2s'
+                }}
+            >
                 {isLoading ? 'Mining in Progress...' : 'Start Mining'}
             </button>
 

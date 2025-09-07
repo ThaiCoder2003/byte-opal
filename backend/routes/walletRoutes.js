@@ -27,7 +27,7 @@ router.use(authMiddleware); // Apply auth middleware to all routes
 
 router.get('/balance', async (req, res) => {
     try {
-        const balance = byteOpal.getBalance(req.user.walletAddress);
+        const balance = await byteOpal.getBalance(req.user.walletAddress);
         res.status(200).json({ balance });
     } catch (error) {
         console.error('Error getting balance:', error);
@@ -78,57 +78,61 @@ router.get('/mine', async (req, res) => {
     }
 });
 
-router.get('/history', (req, res) => {
+router.get('/history', async (req, res) => {
     const walletAddress = req.user.walletAddress;
     const history = [];
 
-    // Iterate through the entire chain to find relevant transactions
-    byteOpal.chain.forEach(block => {
-        block.data.forEach(tx => {
-            let involved = false;
-            let type = '';
-            let counterparty = '';
+    try {
+        const entireChain = await BlockchainModel.find({}).sort({ index: 1 });
 
-            // Check if the user was a recipient
-            if (tx.outputs && tx.outputs.length > 0) {
-                tx.outputs.forEach(output => {
-                    if (output.address === walletAddress) {
-                        involved = true;
-                        type = 'receive';
-                        counterparty = tx.inputs && tx.inputs.length > 0 ? tx.inputs[0].address : 'Mining Reward';
+        entireChain.forEach(block => {
+            block.data.forEach(tx => {
+                const isSender = tx.inputs?.some(input => input.address === walletAddress);
+                const isRecipient = tx.outputs?.some(output => output.address === walletAddress);
+
+                if (!isSender && !isRecipient) {
+                    return; // Not involved in this transaction
+                }
+
+                let type = '';
+                let amount = 0;
+                let counterparty = '';
+
+                if (isSender) {
+                    type = 'send';
+                    // Find the output that went to someone else
+                    const recipientOutput = tx.outputs.find(o => o.address !== walletAddress);
+                    if (recipientOutput) {
+                        amount = recipientOutput.amount;
+                        counterparty = recipientOutput.address;
+                    } else {
+                        // Sent to self
+                        amount = tx.outputs[0]?.amount || 0;
+                        counterparty = walletAddress;
                     }
-                });
-            }
+                } else { // Must be a recipient
+                    type = 'receive';
+                    amount = tx.outputs.find(o => o.address === walletAddress)?.amount || 0;
+                    counterparty = tx.inputs?.[0]?.address || 'Mining Reward';
+                }
 
-            // Check if the user was a sender
-            if (!involved && tx.input && tx.inputs.length > 0) {
-                tx.inputs.forEach(input => {
-                    if (input.address === walletAddress) {
-                        involved = true;
-                        type = 'send';
-                        // Find the recipient (excluding the user's change address)
-                        const recipientOutput = tx.outputs.find(o => o.address !== walletAddress);
-                        counterparty = recipientOutput ? recipientOutput.address : 'Self';
-                    }
-                });
-            }
-
-            if (involved) {
                 history.push({
                     hash: tx.id || tx.hash,
                     timestamp: block.timestamp,
                     type,
                     counterparty,
-                    amount: tx.outputs.find(o => o.address === walletAddress)?.amount || tx.outputs.find(o => o.address !== walletAddress)?.amount,
+                    amount,
                     status: 'confirmed'
                 });
-            }
+            });
         });
-    });
-    
-    // You could also add pending transactions here if desired
+        
+        res.status(200).json({ transactions: history.sort((a, b) => b.timestamp - a.timestamp) });
 
-    res.status(200).json({ transactions: history.sort((a, b) => b.timestamp - a.timestamp) });
+    } catch (error) {
+        console.error('Error fetching transaction history:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 module.exports = router;
